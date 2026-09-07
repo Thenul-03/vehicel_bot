@@ -1,5 +1,10 @@
 {
-  "buildCommand": "cd UI && npm install && npm run build",
-  "outputDirectory": "UI/dist",
-  "framework": null
+  "builds": [
+    { "src": "server.py", "use": "@vercel/python" },
+    { "src": "UI/package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
+  ],
+  "routes": [
+    { "src": "/assets/(.*)", "dest": "/UI/dist/assets/$1" },
+    { "src": "/(.*)", "dest": "server.py" }
+  ]
 }
