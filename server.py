@@ -1,13 +1,19 @@
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_from_directory
 from dotenv import load_dotenv
 import logic
 
 load_dotenv()
 
-app = Flask(__name__, template_folder="templates")
+UI_DIST = os.path.join(os.path.dirname(__file__), "UI", "dist")
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder=os.path.join(UI_DIST, "assets"),
+    static_url_path="/assets",
+)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-me-secret")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 REPORT_STORE = {}
@@ -64,6 +70,9 @@ def default_vehicle_data():
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    if request.method == "GET" and os.path.isfile(os.path.join(UI_DIST, "index.html")):
+        return send_from_directory(UI_DIST, "index.html")
+
     active_tab = request.args.get("tab", "report")
     vehicle_data = session.get("vehicle_data", default_vehicle_data())
     report_data = None
