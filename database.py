@@ -1,26 +1,13 @@
 import os
 import pymongo
-import streamlit as st
 from dotenv import load_dotenv
 from datetime import datetime
 import hashlib
 
 # This function safely finds your connection string no matter where the app is running
 def get_db_client():
-    mongo_uri = None
-    
-    # 1. Try to get URI from Streamlit Cloud Secrets first
-    try:
-        if "MONGO_URI" in st.secrets:
-            mongo_uri = st.secrets["MONGO_URI"]
-    except:
-        # Secrets not configured - that's okay
-        pass
-    
-    # 2. If not in Cloud, load from your local .env file
-    if not mongo_uri:
-        load_dotenv()
-        mongo_uri = os.getenv("MONGO_URI")
+    load_dotenv()
+    mongo_uri = os.getenv("MONGO_URI")
 
     if not mongo_uri:
         # Silently fail - allow app to work with session state

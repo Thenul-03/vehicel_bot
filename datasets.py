@@ -5,7 +5,7 @@ Loads and manages maintenance schedules, OBD codes, and specialized vehicle data
 
 import pandas as pd
 import os
-import streamlit as st
+from functools import lru_cache
 from pathlib import Path
 
 class DatasetHandler:
@@ -18,7 +18,7 @@ class DatasetHandler:
         self.bike_maintenance = None
         self.tuk_maintenance = None
         
-    @st.cache_data
+    @lru_cache(maxsize=None)
     def load_maintenance_schedule(_self):
         """Load maintenance schedule dataset"""
         try:
@@ -26,10 +26,10 @@ class DatasetHandler:
             df = pd.read_csv(path)
             return df
         except Exception as e:
-            st.warning(f"Could not load maintenance schedule: {e}")
+            print(f"WARNING: Could not load maintenance schedule: {e}")
             return None
     
-    @st.cache_data
+    @lru_cache(maxsize=None)
     def load_obd_codes(_self):
         """Load OBD trouble codes dataset"""
         try:
@@ -37,7 +37,7 @@ class DatasetHandler:
             df = pd.read_csv(path, header=None, names=["Code", "Description"])
             return df
         except Exception as e:
-            st.warning(f"Could not load OBD codes: {e}")
+            print(f"WARNING: Could not load OBD codes: {e}")
             return None
     
     def get_maintenance_for_odometer(self, current_odometer, last_service_odo, vehicle_type="Car"):
@@ -81,7 +81,7 @@ class DatasetHandler:
             
             return recommendations
         except Exception as e:
-            st.error(f"Error getting maintenance: {e}")
+            print(f"ERROR: Error getting maintenance: {e}")
             return []
     
     def get_obd_description(self, trouble_code):
@@ -124,7 +124,7 @@ class DatasetHandler:
             }
             return pd.DataFrame(bike_data)
         except Exception as e:
-            st.warning(f"Could not load bike maintenance: {e}")
+            print(f"WARNING: Could not load bike maintenance: {e}")
             return None
     
     def get_tuk_maintenance(self):
@@ -144,7 +144,7 @@ class DatasetHandler:
             }
             return pd.DataFrame(tuk_data)
         except Exception as e:
-            st.warning(f"Could not load tuk maintenance: {e}")
+            print(f"WARNING: Could not load tuk maintenance: {e}")
             return None
     
     def get_car_parts_info(self, fuel_type="Petrol"):

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="card-title">Local Vehicle Maintenance Assistant</h1>
+                <p class="card-text">Run the application locally and generate vehicle reports, risk analysis, and AI guidance without Streamlit.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if active_tab == 'report' %}
+<div class="row">
+    <div class="col-lg-5">
+        <form method="post" action="{{ url_for('index') }}">
+            <input type="hidden" name="form_type" value="report">
+            <input type="hidden" name="active_tab" value="report">
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Vehicle Information</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Vehicle Type</label>
+                        <select class="form-select" name="v_type">
+                            {% for vt in vehicle_types %}
+                                <option value="{{ vt }}" {% if vehicle_data.v_type == vt %}selected{% endif %}>{{ vt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Brand / Model</label>
+                        <input class="form-control" name="model" value="{{ vehicle_data.model }}" placeholder="e.g. Honda Civic">
+ </div>
+                    <div class="row gx-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Year</label>
+                            <input type="number" class="form-control" name="m_year" value="{{ vehicle_data.m_year }}" min="1990" max="2026">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odometer (km)</label>
+                            <input type="number" class="form-control" name="odo" value="{{ vehicle_data.odo }}" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Location</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">District</label>
+                        <select class="form-select" name="district">
+                            {% for district in districts %}
+                                <option value="{{ district }}" {% if vehicle_data.district == district %}selected{% endif %}>{{ district }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nearest City</label>
+                        <input class="form-control" name="city" value="{{ vehicle_data.city }}" placeholder="e.g. Maharagama">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Maintenance History</div>
+                <div class="card-body">
+                    <div class="row gx-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Service (km)</label>
+                            <input type="number" class="form-control" name="service_odo" value="{{ vehicle_data.s_odo }}" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Alignment / Pressure Check (km)</label>
+                            <input type="number" class="form-control" name="alignment_odo" value="{{ vehicle_data.a_odo }}" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Recent Trips</div>
+                <div class="card-body">
+                    {% for idx in [1, 2, 3] %}
+                        <div class="border rounded p-3 mb-3">
+                            <h6 class="mb-3">Trip {{ idx }}</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Distance (km)</label>
+                                <input type="number" class="form-control" name="t{{ idx }}_km" value="{{ vehicle_data['t' ~ idx ~ '_km'] }}" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control" name="t{{ idx }}_date" value="{{ vehicle_data['t' ~ idx ~ '_date'] }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Road Type</label>
+                                <select class="form-select" name="t{{ idx }}_road" multiple>
+                                    {% for road_type in road_types %}
+                                        <option value="{{ road_type }}" {% if road_type in vehicle_data['t' ~ idx ~ '_road'] %}selected{% endif %}>{{ road_type }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Hold Ctrl / Cmd to select more than one.</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Recent Parts & Notes</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Recently Replaced Parts</label>
+                        <select class="form-select" name="parts_replaced" multiple>
+                            {% for part in parts_options %}
+                                <option value="{{ part }}" {% if part in vehicle_data.parts_replaced %}selected{% endif %}>{{ part }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Hold Ctrl / Cmd to select multiple items.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Additional Notes</label>
+                        <textarea class="form-control" name="additional_notes" rows="3">{{ vehicle_data.additional_notes }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mb-4">
+                <button type="submit" name="action" value="generate" class="btn btn-primary">Generate Predictive Report</button>
+                <button type="submit" name="action" value="refresh" class="btn btn-outline-secondary">Refresh Form</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-7">
+        {% if report_data %}
+            <div class="card shadow-sm report-card">
+                <div class="card-header">Report Summary</div>
+                <div class="card-body">
+                    <p><strong>Vehicle:</strong> {{ report_data.metadata.vehicle }}</p>
+                    <p><strong>Location:</strong> {{ report_data.metadata.location }}</p>
+                    <p><strong>Odometer:</strong> {{ report_data.metadata.current_odometer }} km</p>
+                    <p><strong>Generated:</strong> {{ report_data.metadata.generated_at }}</p>
+
+                    <h5>Accident Risk</h5>
+                    <p><strong>Level:</strong> {{ report_data.accident_risk.level }}<br>
+                    <strong>Score:</strong> {{ report_data.accident_risk.score }}/100</p>
+                    {% if report_data.accident_risk.factors %}
+                        <ul>
+                            {% for factor in report_data.accident_risk.factors %}
+                                <li>{{ factor }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if report_data.structured_data.critical_issues %}
+                        <h5>Critical Issues</h5>
+                        <ul>
+                            {% for issue in report_data.structured_data.critical_issues %}
+                                <li>{{ issue }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if report_data.structured_data.parts_to_replace %}
+                        <h5>Parts to Replace</h5>
+                        <ul>
+                            {% for part in report_data.structured_data.parts_to_replace %}
+                                <li><strong>{{ part.name }}</strong> - {{ part.estimated_cost_lkr }} LKR ({{ part.urgency }})<br>{{ part.why }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if report_data.weather %}
+                        <h5>Weather</h5>
+                        <p><strong>Temperature:</strong> {{ report_data.weather.temp }}°C<br>
+                           <strong>Condition:</strong> {{ report_data.weather.condition }}<br>
+                           <strong>Humidity:</strong> {{ report_data.weather.humidity }}%</p>
+                    {% endif %}
+
+                    {% if report_data.structured_data.spare_parts_shops %}
+                        <h5>Nearby Spare Parts Shops</h5>
+                        <ul>
+                            {% for shop in report_data.structured_data.spare_parts_shops %}
+                                <li><strong>{{ shop.name }}</strong> — {{ shop.location }}, {{ shop.phone }}<br>{{ shop.specialty }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <a href="{{ url_for('download', fmt='csv') }}" class="btn btn-outline-primary me-2">Download CSV</a>
+                        <a href="{{ url_for('download', fmt='pdf') }}" class="btn btn-outline-secondary">Download PDF</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">Complete the form and click "Generate Predictive Report" to see the local report here.</div>
+        {% endif %}
+    </div>
+</div>
+{% elif active_tab == 'chat' %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow-sm report-card">
+            <div class="card-header">AI Mechanic Chat</div>
+            <div class="card-body">
+                <div class="mb-4">
+                    {% if chat_history %}
+                        {% for message in chat_history %}
+                            <div class="chat-message {{ message.role }}">
+                                <div class="chat-bubble {{ message.role }}">{{ message.content | safe }}</div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-secondary">Start a chat with the AI mechanic. Ask a maintenance question or upload a photo for analysis.</div>
+                    {% endif %}
+                </div>
+                <form method="post" action="{{ url_for('index') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="form_type" value="chat">
+                    <input type="hidden" name="active_tab" value="chat">
+                    <div class="mb-3">
+                        <label class="form-label">Your question</label>
+                        <textarea class="form-control" name="chat_query" rows="3" placeholder="Ask anything about your vehicle..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Upload Photo (optional)</label>
+                        <input type="file" class="form-control" name="chat_photo" accept="image/png, image/jpeg, image/jpg, image/gif">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send to AI Mechanic</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

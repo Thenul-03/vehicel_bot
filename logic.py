@@ -1,4 +1,3 @@
-import streamlit as st
 from langchain_groq import ChatGroq
 import base64
 import json
@@ -296,7 +295,7 @@ def get_vehicle_condition_description(odo, service_odo, align_odo, m_year, parts
 
 def get_structured_report(v_type, model, m_year, odo, district, city, tyre_odo, align_odo, service_odo, trips, parts_replaced=None, additional_notes=None, parts_mileage=None, fuel_type=None):
     """Generate structured report with sections - Using datasets for maintenance, APIs for weather/shops"""
-    api_key = st.secrets.get("GROQ_API_KEY")
+    api_key = os.getenv("GROQ_API_KEY")
     llm = ChatGroq(model="llama-3.3-70b-versatile", groq_api_key=api_key)
     
     # Get weather data
@@ -503,14 +502,19 @@ def get_advanced_report(v_type, model, m_year, odo, district, city, tyre_odo, al
 def analyze_vision_chat(image_file, user_query, vehicle_context):
     """Analyze vehicle description using Groq LLM (no image API needed)"""
     try:
-        # Get Groq API key
-        api_key = st.secrets.get("GROQ_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            return "❌ Groq API key not configured. Please add GROQ_API_KEY to secrets."
+            return "❌ Groq API key not configured. Please add GROQ_API_KEY to your environment."
         
-        # Read image file details
-        image_name = image_file.name
-        image_size = image_file.size / (1024 * 1024)  # Convert to MB
+        image_name = getattr(image_file, "name", None) or getattr(image_file, "filename", "uploaded_image")
+        image_size = 0.0
+        try:
+            current_position = image_file.tell()
+            image_file.seek(0, os.SEEK_END)
+            image_size = image_file.tell() / (1024 * 1024)
+            image_file.seek(current_position)
+        except Exception:
+            pass
         
         # Create analysis prompt based on image metadata and user query
         analysis_prompt = f"""You are an expert Sri Lankan automotive mechanic (2026) with advanced visual diagnostics skills.
@@ -745,13 +749,13 @@ def generate_pdf_report(report_data):
         buffer.seek(0)
         return buffer.getvalue()
     except Exception as e:
-        st.error(f"PDF generation error: {str(e)}")
+        print(f"PDF generation error: {e}")
         return None
 
 def chat_with_mechanic(user_query, vehicle_context):
     """Chat with AI mechanic without image - text-only conversation"""
     try:
-        api_key = st.secrets.get("GROQ_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             return "❌ API key not configured. Please set GROQ_API_KEY."
         
