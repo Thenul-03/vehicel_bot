@@ -1,7 +1,5 @@
 {
+  "framework": "vite",
   "buildCommand": "npm --prefix UI install && npm --prefix UI run build",
-  "outputDirectory": "UI/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "outputDirectory": "UI/dist"
 }
